@@ -3,11 +3,140 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Copy, ExternalLink, Flame, MessageCircle, Settings, TrendingUp } from "lucide-react"
+import { Copy, ExternalLink, Flame, MessageCircle, Settings, TrendingUp, Download, Bot } from "lucide-react"
 
 export default function IntegrationPage() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
+  }
+
+  const downloadDialogflowFiles = () => {
+    // Intents para Dialogflow
+    const intents = {
+      "fogo-status": {
+        name: "fogo-status",
+        displayName: "Fogo Status",
+        trainingPhrases: [
+          { parts: [{ text: "!fogo" }] },
+          { parts: [{ text: "fogo" }] },
+          { parts: [{ text: "status do fogo" }] },
+          { parts: [{ text: "como está o fogo" }] },
+        ],
+        messages: [
+          {
+            text: {
+              text: [
+                "🔥 Status do Foguinho:\n\nStreak atual: {{streak}} dias\nNível: {{level}}\nUsuários ativos hoje: {{activeUsers}}/{{totalUsers}}\n\nMantenha o grupo ativo para não perder o fogo! 💪",
+              ],
+            },
+          },
+        ],
+        webhookState: "WEBHOOK_STATE_ENABLED",
+      },
+      "fogo-restaurar": {
+        name: "fogo-restaurar",
+        displayName: "Restaurar Fogo",
+        trainingPhrases: [
+          { parts: [{ text: "!restaurar" }] },
+          { parts: [{ text: "restaurar fogo" }] },
+          { parts: [{ text: "reacender fogo" }] },
+          { parts: [{ text: "restaurar" }] },
+        ],
+        messages: [
+          {
+            text: {
+              text: [
+                "🔥 Foguinho restaurado com sucesso!\n\nO fogo foi reaceso e o streak reiniciou.\nRestaurações restantes este mês: {{restorationsLeft}}/5\n\nVamos manter o fogo aceso! 🚀",
+              ],
+            },
+          },
+        ],
+        webhookState: "WEBHOOK_STATE_ENABLED",
+      },
+      "fogo-nivel": {
+        name: "fogo-nivel",
+        displayName: "Nível do Fogo",
+        trainingPhrases: [
+          { parts: [{ text: "!nivel" }] },
+          { parts: [{ text: "nível" }] },
+          { parts: [{ text: "que nível estamos" }] },
+          { parts: [{ text: "progresso" }] },
+        ],
+        messages: [
+          {
+            text: {
+              text: [
+                "🎯 Nível do Foguinho:\n\n{{levelIcon}} {{levelName}}\nStreak: {{streak}} dias\nProgresso para próximo nível: {{progress}}%\n\nFaltam {{daysToNext}} dias para o próximo nível! 🔥",
+              ],
+            },
+          },
+        ],
+        webhookState: "WEBHOOK_STATE_ENABLED",
+      },
+      "fogo-ranking": {
+        name: "fogo-ranking",
+        displayName: "Ranking dos Grupos",
+        trainingPhrases: [
+          { parts: [{ text: "!ranking" }] },
+          { parts: [{ text: "ranking" }] },
+          { parts: [{ text: "top grupos" }] },
+          { parts: [{ text: "melhores grupos" }] },
+        ],
+        messages: [
+          {
+            text: {
+              text: [
+                "🏆 Ranking dos Grupos:\n\n1º {{group1}} - {{streak1}} dias 🥇\n2º {{group2}} - {{streak2}} dias 🥈\n3º {{group3}} - {{streak3}} dias 🥉\n\nSeu grupo está em {{position}}º lugar! 🔥",
+              ],
+            },
+          },
+        ],
+        webhookState: "WEBHOOK_STATE_ENABLED",
+      },
+    }
+
+    // Entities para Dialogflow
+    const entities = {
+      "fire-commands": {
+        name: "fire-commands",
+        displayName: "Comandos do Fogo",
+        entities: [
+          { value: "fogo", synonyms: ["fogo", "!fogo", "status"] },
+          { value: "restaurar", synonyms: ["restaurar", "!restaurar", "reacender"] },
+          { value: "nivel", synonyms: ["nivel", "!nivel", "nível", "progresso"] },
+          { value: "ranking", synonyms: ["ranking", "!ranking", "top", "melhores"] },
+        ],
+      },
+    }
+
+    // Fulfillment webhook
+    const fulfillment = {
+      webhook: {
+        url: `${window.location.origin}/api/webhook`,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    }
+
+    // Criar e baixar arquivos
+    const files = [
+      { name: "intents.json", content: JSON.stringify(intents, null, 2) },
+      { name: "entities.json", content: JSON.stringify(entities, null, 2) },
+      { name: "fulfillment.json", content: JSON.stringify(fulfillment, null, 2) },
+    ]
+
+    files.forEach((file) => {
+      const blob = new Blob([file.content], { type: "application/json" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = file.name
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    })
   }
 
   return (
@@ -25,6 +154,54 @@ export default function IntegrationPage() {
             Configure seu bot do WhatsApp para usar o sistema de foguinho. Siga os passos abaixo para integrar.
           </p>
         </div>
+
+        <Card className="border-blue-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="h-5 w-5 text-blue-500" />
+              Exportar para Dialogflow
+            </CardTitle>
+            <CardDescription>Baixe os arquivos de configuração para importar no Google Dialogflow</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-semibold mb-2">O que será exportado:</h4>
+              <ul className="text-sm space-y-1 text-gray-600">
+                <li>
+                  • <strong>Intents:</strong> !fogo, !restaurar, !nivel, !ranking
+                </li>
+                <li>
+                  • <strong>Entities:</strong> Comandos e sinônimos
+                </li>
+                <li>
+                  • <strong>Fulfillment:</strong> Configuração do webhook
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={downloadDialogflowFiles} className="bg-blue-600 hover:bg-blue-700">
+                <Download className="h-4 w-4 mr-2" />
+                Baixar Arquivos Dialogflow
+              </Button>
+              <Button variant="outline" onClick={() => window.open("https://dialogflow.cloud.google.com/", "_blank")}>
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Abrir Dialogflow Console
+              </Button>
+            </div>
+
+            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <h4 className="font-semibold mb-2 text-yellow-800">Como importar no Dialogflow:</h4>
+              <ol className="text-sm space-y-1 text-yellow-700 list-decimal list-inside">
+                <li>Acesse o Google Dialogflow Console</li>
+                <li>Crie um novo agente ou selecione um existente</li>
+                <li>Vá em Settings → Export and Import</li>
+                <li>Clique em "Import From ZIP" e faça upload dos arquivos</li>
+                <li>Configure o webhook URL nas configurações de Fulfillment</li>
+              </ol>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Quick Setup */}
         <Card className="border-orange-200">
